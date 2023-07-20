@@ -1,7 +1,6 @@
 import csv
 
 from django.core.management.base import BaseCommand
-
 from recipes.models import Ingredient
 
 
@@ -17,5 +16,5 @@ class Command(BaseCommand):
                 name = row['name']
                 measurement_unit = row['measurement_unit']
                 Ingredient(
-                     name=name,
-                     measurement_unit=measurement_unit).save()
+                    name=name,
+                    measurement_unit=measurement_unit).save()

@@ -167,8 +167,7 @@ class ShoppinCartListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Recipe.objects.filter(
-           shopping__user_id=self.request.user.id)
+        return Recipe.objects.filter(shopping__user_id=self.request.user.id)
 
 
 class ShoppingCartAdd(APIView):
