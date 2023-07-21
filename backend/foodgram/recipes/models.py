@@ -51,7 +51,7 @@ class Recipe(models.Model):
         Tag,
         related_name='recipes',
         verbose_name='Теги',
-        help_text="Теги рецепта",
+        help_text='Теги рецепта',
     )
     cooking_time = models.IntegerField(
         validators=(MinValueValidator(1),),

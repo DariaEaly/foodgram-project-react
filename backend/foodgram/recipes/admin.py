@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow, User
@@ -31,7 +32,7 @@ class RecipeAdmin(admin.ModelAdmin):
     ]
 
     def get_tags(self, obj):
-        return "\n".join([p.name for p in obj.tags.all()])
+        return '\n'.join([p.name for p in obj.tags.all()])
 
 
 @admin.register(Tag)
@@ -59,7 +60,7 @@ class ShoopingCartAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit', "id")
+    list_display = ('name', 'measurement_unit', 'id')
     search_fields = ('name',)
     empty_value_display = '-пусто-'
     list_filter = ('name',)
