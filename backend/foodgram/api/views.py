@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.serializers import SetPasswordSerializer, UserCreateSerializer
 from djoser.views import UserViewSet
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (IsAuthenticated,
@@ -13,8 +15,6 @@ from rest_framework.permissions import (IsAuthenticated,
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import Follow, User
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
 
 from .filters import RecipeFilter
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly

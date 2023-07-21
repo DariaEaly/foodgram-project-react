@@ -1,8 +1,8 @@
-from rest_framework.routers import DefaultRouter
-from django.urls import include, path
 from api.views import (CustomUserViewSet, FavoriteView, FollowView,
                        IngredientViewSet, RecipeViewSet, ShoppingCartView,
                        TagViewSet)
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
 app_name = 'api'
 
