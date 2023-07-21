@@ -12,10 +12,9 @@ from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from users.models import Follow, User
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
-from users.models import Follow, User
 
 from .filters import RecipeFilter
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
@@ -41,8 +40,7 @@ class CustomUserViewSet(UserViewSet):
         if user.is_authenticated:
             return User.objects.annotate(
                 is_subscribed=Exists(
-                    Follow.objects.filter(user=user, author=OuterRef('pk')))
-                )
+                    Follow.objects.filter(user=user, author=OuterRef('pk'))))
         return User.objects.annotate(
             is_subscribed=Value(False, output_field=BooleanField()))
 
@@ -67,8 +65,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
                     user=user, recipe=OuterRef('pk'))))
         return Recipe.objects.annotate(
-                is_favorited=Value(False, output_field=BooleanField()),
-                is_in_shopping_cart=Value(False, output_field=BooleanField()))
+            is_favorited=Value(False, output_field=BooleanField()),
+            is_in_shopping_cart=Value(False, output_field=BooleanField()))
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -85,8 +83,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             ingredient = recipe_ingredient.ingredient
             lines.append(
                 f'{ingredient.name} ({ingredient.measurement_unit})'
-                f' - {recipe_ingredient.amount}\n'
-                )
+                f' - {recipe_ingredient.amount}\n')
         return ''.join(lines)
 
     @action(['get'], detail=False)
