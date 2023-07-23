@@ -23,8 +23,6 @@ jobs:
         cd backend/foodgram/
         # установка зависимостей
         pip install -r requirements.txt 
-        # возврат к корневой директории
-        cd ../..
 
   build_and_push_to_docker_hub:
     runs-on: ubuntu-latest
@@ -49,7 +47,6 @@ jobs:
       uses: docker/build-push-action@v4 
       with:
         context: .
-        dockerfile: backend/foodgram/Dockerfile
         push: true
         tags: dariaealy/foodgram:latest
 
