@@ -48,7 +48,8 @@ jobs:
             # Пуш образа бэкенда в Docker Hub 
       uses: docker/build-push-action@v4 
       with:
-        file: ./backend/foodgram/Dockerfile
+        context: .
+        dockerfile: backend/foodgram/Dockerfile
         push: true
         tags: dariaealy/foodgram:latest
 
