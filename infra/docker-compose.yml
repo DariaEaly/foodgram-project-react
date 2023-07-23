@@ -10,7 +10,7 @@ services:
       - ../.env
 
   backend:
-    build: ../backend/foodgram
+    image: dariaealy/foodgram:latest
     restart: always
     volumes:
       - backend_static:/app/static/
@@ -21,9 +21,7 @@ services:
       - ../.env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: dariaealy/foodgram_front:latest
     volumes:
       - ../frontend/:/app/result_build/
 

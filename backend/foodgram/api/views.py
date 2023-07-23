@@ -105,7 +105,7 @@ class FollowView(APIView):
     def get(self, request, pk=None):
         if pk is None:
             follow = (Follow.objects.filter(user=request.user)
-                    .prefetch_related('author'))
+                      .prefetch_related('author'))
             authors = [follow_obj.author for follow_obj in follow]
             paginator = PageNumberPagination()
             paginator.page_size = 6
