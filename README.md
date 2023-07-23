@@ -1,4 +1,4 @@
-# сайт Foodgram, «Продуктовый помощник»
+# Cайт Foodgram, «Продуктовый помощник»
 
 ## Описание
 
@@ -9,6 +9,69 @@
 **Python:** 3.11
 
 **Django:** 4.2.2
+
+## Проект на сервере
+Проект доступен по адресу [158.160.25.190](http://158.160.25.190/)
+
+Вход в админку:
+
+admin@email.com
+
+admin
+
+## Шаблон наполнения env-файла
+
+```python
+DB_ENGINE=DB_ENGINE
+DB_NAME=DB_NAME
+POSTGRES_USER=POSTGRES_USER
+POSTGRES_PASSWORD=POSTGRES_PASSWORD
+DB_HOST=DB_HOST
+DB_PORT=DB_PORT
+SECRET_KEY=SECRET_KEY
+DEBUG=DEBUG
+ALLOWED_HOSTS ='host,host'
+```
+
+## Запуск приложения в контейнерах
+
+- Перейдите в папку infra
+
+    ```bash
+    cd infra
+    ```
+
+- Запустите создание контейнеров
+
+    ```bash
+    docker-compose up
+    ```
+
+- Подготовьте миграции
+
+    ```bash
+    docker-compose exec backend python manage.py makemigrations reviews
+    ```
+
+- Выполните миграции
+
+    ```bash
+    docker-compose exec backend python manage.py migrate
+    ```
+
+- Создайте суперпользователя
+
+    ```bash
+    docker-compose exec backend python manage.py createsuperuser
+    ```
+
+- Соберите статику
+
+    ```bash
+    docker-compose exec web python manage.py collectstatic --no-input
+    ```
+
+- Проект доступен по адресу [http://localhost/](http://localhost/)
 
 ## Запуск проекта в dev-режиме
 
@@ -77,7 +140,7 @@
 - Получите список всех рецептов:
 
     ```bash
-    curl -X GET "http://127.0.0.1:8000/api/recipes/"
+    curl -X GET "/api/recipes/"
     ```
 
 ## Автор
