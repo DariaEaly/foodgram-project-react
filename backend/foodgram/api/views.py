@@ -1,12 +1,10 @@
-import io
-
-from django.db.models import BooleanField, Exists, OuterRef, Q, Value
+from django.db.models import Exists, OuterRef, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.serializers import SetPasswordSerializer, UserCreateSerializer
+from djoser.serializers import UserCreateSerializer
 from djoser.views import UserViewSet
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+from recipes.models import (Favorite, Ingredient, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
@@ -19,18 +17,18 @@ from users.models import Follow, User
 from .filters import RecipeFilter
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, FollowSerializer,
-                          RecipeGetSerializer, RecipeIngredientSerializer,
+                          RecipeGetSerializer, IngredientSerializer,
                           RecipePostSerializer, RecipeShortSerializer,
                           ShoppingCartSerializer, TagSerializer,
-                          UserSerializer)
+                          UserSerializer, FollowGetSerializer)
+from .services import create_shopping_list
+from rest_framework.pagination import PageNumberPagination
 
 
 class CustomUserViewSet(UserViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
-        if self.action == 'set_password':
-            return SetPasswordSerializer
         if self.request.method == 'POST':
             return UserCreateSerializer
         return UserSerializer
@@ -41,32 +39,30 @@ class CustomUserViewSet(UserViewSet):
             return User.objects.annotate(
                 is_subscribed=Exists(
                     Follow.objects.filter(user=user, author=OuterRef('pk'))))
-        return User.objects.annotate(
-            is_subscribed=Value(False, output_field=BooleanField()))
+        return User.objects.all()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
-        if self.request.method == 'POST' or self.request.method == 'PATCH':
+        if self.request.method in ['POST', 'PATCH']:
             return RecipePostSerializer
         return RecipeGetSerializer
 
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
-            return Recipe.objects.annotate(
-                is_favorited=Exists(Favorite.objects.filter(
-                    user=user, recipe=OuterRef('pk'))),
-                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-                    user=user, recipe=OuterRef('pk'))))
-        return Recipe.objects.annotate(
-            is_favorited=Value(False, output_field=BooleanField()),
-            is_in_shopping_cart=Value(False, output_field=BooleanField()))
+            return (Recipe.objects.select_related('author')
+                    .prefetch_related('ingredients')
+                    .annotate(
+                        is_favorited=Exists(Favorite.objects.filter(
+                            user=user, recipe=OuterRef('pk'))),
+                        is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                            user=user, recipe=OuterRef('pk')))))
+        return Recipe.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -75,21 +71,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
         super(RecipeViewSet, self).perform_update(serializer)
 
-    def create_shopping_list(self, user):
-        lines = []
-        recipe_ingredients = RecipeIngredient.objects.filter(
-            recipe__shopping__user=user)
-        for recipe_ingredient in recipe_ingredients:
-            ingredient = recipe_ingredient.ingredient
-            lines.append(
-                f'{ingredient.name} ({ingredient.measurement_unit})'
-                f' - {recipe_ingredient.amount}\n')
-        return ''.join(lines)
-
     @action(['get'], detail=False)
     def download_shopping_cart(self, request):
-        shopping_list = self.create_shopping_list(request.user)
-        temp_file = io.BytesIO(shopping_list.encode())
+        temp_file = create_shopping_list(request.user)
         temp_file.seek(0)
         response = FileResponse(temp_file, content_type='text/plain')
         response['Content-Disposition'] = (
@@ -108,22 +92,28 @@ class TagViewSet(viewsets.ModelViewSet):
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
-    serializer_class = RecipeIngredientSerializer
+    serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name')
+    search_fields = ('name',)
     permission_classes = [IsAdminOrReadOnly]
+    pagination_class = None
 
 
 class FollowView(APIView):
-    serializer_class = RecipeGetSerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         if pk is None:
-            queryset = Recipe.objects.filter(
-                author__following__user_id=request.user.id)
-            serializer = RecipeGetSerializer(queryset, many=True)
-            return Response(serializer.data)
+            follow = (Follow.objects.filter(user=request.user)
+                    .prefetch_related('author'))
+            authors = [follow_obj.author for follow_obj in follow]
+            paginator = PageNumberPagination()
+            paginator.page_size = 6
+            result = paginator.paginate_queryset(authors, request)
+            serializer = FollowGetSerializer(
+                result, many=True, context={"current_user": request.user}
+            )
+            return paginator.get_paginated_response(serializer.data)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def post(self, request, pk):
