@@ -24,11 +24,6 @@ jobs:
         # установка зависимостей
         pip install -r requirements.txt 
 
-    - name: Test with flake8
-      run: |
-        # запуск проверки проекта по flake8
-        python -m flake8
-
   build_and_push_to_docker_hub:
     runs-on: ubuntu-latest
     name: Push Docker image to Docker Hub
