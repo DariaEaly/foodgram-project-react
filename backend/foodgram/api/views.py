@@ -2,7 +2,7 @@ from django.db.models import Exists, OuterRef, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.serializers import UserCreateSerializer
+from djoser.serializers import UserCreateSerializer, SetPasswordSerializer
 from djoser.views import UserViewSet
 from recipes.models import (Favorite, Ingredient, Recipe,
                             ShoppingCart, Tag)
@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import Follow, User
 
-from .filters import RecipeFilter, IngredientFilter
+from .filters import RecipeFilter, IngredientFilter, TagsFilter
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           RecipeGetSerializer, IngredientSerializer,
@@ -29,6 +29,8 @@ class UserViewSet(UserViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
+        if self.action == 'set_password':
+            return SetPasswordSerializer
         if self.request.method == 'POST':
             return UserCreateSerializer
         return UserSerializer
@@ -39,15 +41,59 @@ class UserViewSet(UserViewSet):
             return (User
                     .objects
                     .annotate(
-                     is_subscribed=Exists(
-                        Follow.objects
-                        .filter(user=user, author=OuterRef('pk')))))
+                        is_subscribed=Exists(
+                            Follow.objects
+                            .filter(user=user, author=OuterRef('pk'))
+                            )
+                        ))
         return User.objects.all()
+
+    @action(['get'], detail=False)
+    def subscriptions(self, request):
+        follow = (Follow
+                  .objects
+                  .filter(user=request.user)
+                  .prefetch_related('author'))
+        authors = [follow_obj.author for follow_obj in follow]
+        paginator = PageNumberPagination()
+        paginator.page_size = 6
+        result = paginator.paginate_queryset(authors, request)
+        serializer = FollowGetSerializer(
+            result, many=True, context={"user": request.user}
+        )
+        for author_data in serializer.data:
+            author_data["is_subscribed"] = author_data["id"] in (
+                [author.id for author in authors])
+
+        return paginator.get_paginated_response(serializer.data)
+
+    @action(methods=['post', 'delete'], detail=True, url_path='subscribe')
+    def subscribe(self, request, id=None):
+        author = get_object_or_404(User, id=id)
+        if request.method == 'POST':
+            data = {
+                'user': request.user.id,
+                'author': id,
+            }
+            serializer = FollowSerializer(
+                data=data, context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(UserSerializer(author).data,
+                            status=status.HTTP_201_CREATED)
+
+        if request.method == 'DELETE':
+            del_count, _ = author.following.filter(user=request.user).delete()
+            if del_count:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, TagsFilter)
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
@@ -157,43 +203,3 @@ class IngredientViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
     pagination_class = None
-
-
-class FollowView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk=None):
-        if pk is None:
-            follow = (Follow
-                      .objects
-                      .filter(user=request.user)
-                      .prefetch_related('author'))
-            authors = [follow_obj.author for follow_obj in follow]
-            paginator = PageNumberPagination()
-            paginator.page_size = 6
-            result = paginator.paginate_queryset(authors, request)
-            serializer = FollowGetSerializer(
-                result, many=True, context={"current_user": request.user}
-            )
-            return paginator.get_paginated_response(serializer.data)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def post(self, request, pk):
-        data = {
-            'user': request.user.id,
-            'author': pk,
-        }
-        serializer = FollowSerializer(
-            data=data, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(UserSerializer(User.objects.get(pk=pk)).data,
-                        status=status.HTTP_201_CREATED)
-
-    def delete(self, request, pk):
-        author = get_object_or_404(User, id=pk)
-        del_count, _ = author.following.filter(user=request.user).delete()
-        if del_count:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)

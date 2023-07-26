@@ -22,7 +22,8 @@ class IngredientsInLine(admin.TabularInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'text', 'author', 'pub_date', 'get_tags')
+    list_display = ('pk', 'name', 'text', 'author',
+                    'pub_date', 'get_tags', 'count_favorites')
     search_fields = ('text', 'name')
     list_filter = ('name', 'author', 'tags')
     empty_value_display = '-пусто-'

@@ -11,6 +11,7 @@
 **Django:** 4.2.2
 
 ## Проект на сервере
+
 Проект доступен по адресу [158.160.25.190](http://158.160.25.190/)
 
 Вход в админку:
@@ -22,6 +23,7 @@ admin
 ## Шаблон наполнения env-файла
 
 ```python
+SECRET_KEY=SECRET_KEY
 DB_ENGINE=DB_ENGINE
 DB_NAME=DB_NAME
 POSTGRES_USER=POSTGRES_USER

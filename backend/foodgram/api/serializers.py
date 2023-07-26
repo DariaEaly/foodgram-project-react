@@ -142,6 +142,7 @@ class FollowGetSerializer(UserSerializer):
     recipes = RecipeShortSerializer(many=True)
     author = UserSerializer
     recipes_count = serializers.SerializerMethodField("get_recipes_count")
+    is_subscribed = serializers.BooleanField(default=False, read_only=True)
 
     class Meta:
         model = User
@@ -155,10 +156,10 @@ class FollowGetSerializer(UserSerializer):
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='username',
-        default=serializers.CurrentUserDefault())
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        default=serializers.CurrentUserDefault()
+    )
     author = UserSerializer
 
     class Meta:

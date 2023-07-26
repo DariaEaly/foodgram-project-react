@@ -1,16 +1,20 @@
-from django_filters.rest_framework import FilterSet, filters
+from django_filters import rest_framework as drf_filters
 from recipes.models import Ingredient, Recipe
+from rest_framework import filters
 
 
-class TagsFilter(filters.BaseCSVFilter, filters.CharFilter):
-    pass
+class TagsFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        tags = request.query_params.getlist('tags')
+        if tags:
+            return queryset.filter(tags__slug__in=tags)
+        return queryset
 
 
-class RecipeFilter(FilterSet):
-    is_favorited = filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(
+class RecipeFilter(drf_filters.FilterSet):
+    is_favorited = drf_filters.BooleanFilter(method='filter_is_favorited')
+    is_in_shopping_cart = drf_filters.BooleanFilter(
         method='filter_is_in_shopping_cart')
-    tags = TagsFilter(field_name='tags__slug', lookup_expr='in')
 
     class Meta:
         model = Recipe
@@ -31,8 +35,8 @@ class RecipeFilter(FilterSet):
         return queryset
 
 
-class IngredientFilter(FilterSet):
-    name = filters.CharFilter(field_name='name', lookup_expr='startswith')
+class IngredientFilter(drf_filters.FilterSet):
+    name = drf_filters.CharFilter(field_name='name', lookup_expr='startswith')
 
     class Meta:
         model = Ingredient
