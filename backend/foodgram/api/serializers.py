@@ -97,6 +97,13 @@ class RecipePostSerializer(serializers.ModelSerializer):
             'tags', 'author', 'ingredients',
             'name', 'image', 'text', 'cooking_time')
 
+        validators = [
+            UniqueTogetherValidator(
+                queryset=RecipeIngredient.objects.all(),
+                fields=('recipe', 'ingredient')
+            )
+        ]
+
     def to_representation(self, instance):
         return RecipeGetSerializer(
             instance, context={'request': self.context.get('request')}).data
