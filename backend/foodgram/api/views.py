@@ -8,10 +8,8 @@ from recipes.models import (Favorite, Ingredient, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from users.models import Follow, User
 
 from .filters import RecipeFilter, IngredientFilter, TagsFilter
@@ -44,8 +42,8 @@ class UserViewSet(UserViewSet):
                         is_subscribed=Exists(
                             Follow.objects
                             .filter(user=user, author=OuterRef('pk'))
-                            )
-                        ))
+                        )
+                    ))
         return User.objects.all()
 
     @action(['get'], detail=False)
@@ -111,12 +109,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if user.is_authenticated:
             return (queryset
                     .annotate(
-                     is_favorited=Exists(
-                        Favorite.objects
-                        .filter(user=user, recipe=OuterRef('pk'))),
-                     is_in_shopping_cart=Exists(
-                        ShoppingCart.objects
-                        .filter(user=user, recipe=OuterRef('pk'))))
+                        is_favorited=Exists(
+                            Favorite.objects
+                            .filter(user=user, recipe=OuterRef('pk'))),
+                        is_in_shopping_cart=Exists(
+                            ShoppingCart.objects
+                            .filter(user=user, recipe=OuterRef('pk'))))
                     )
         return queryset
 
