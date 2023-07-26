@@ -1,5 +1,6 @@
 from django_filters import rest_framework as drf_filters
 from recipes.models import Ingredient, Recipe
+from django.db.models import Q
 from rest_framework import filters
 
 
@@ -7,7 +8,10 @@ class TagsFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         tags = request.query_params.getlist('tags')
         if tags:
-            return queryset.filter(tags__slug__in=tags)
+            q_objects = Q()
+            for tag in tags:
+                q_objects |= Q(tags__slug=tag)
+            return queryset.filter(q_objects)
         return queryset
 
 
