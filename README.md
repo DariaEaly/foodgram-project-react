@@ -18,7 +18,7 @@
 
 admin@email.com
 
-admin
+Foodgram2023
 
 ## Шаблон наполнения env-файла
 
