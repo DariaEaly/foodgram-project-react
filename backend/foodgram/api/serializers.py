@@ -140,7 +140,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
             'cooking_time', instance.cooking_time)
         ingredients = validated_data.pop('ingredients', None)
         if ingredients is not None:
-            instance.recipeingredient_set.all().delete()
+            RecipeIngredient.objects.filter(recipe=instance).delete()
             RecipeIngredient.objects.bulk_create([
                 RecipeIngredient(
                     ingredient_id=ingredient['id'],
