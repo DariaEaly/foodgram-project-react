@@ -131,7 +131,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                 )
                     )
                 )
-                )
+            )
         return queryset
 
     def perform_create(self, serializer):
@@ -154,7 +154,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     queryset
                     .filter(
                         **{f'{related_field}__user': request.user}
-                        )
+                    )
                 )
                 serializer = RecipeGetSerializer(queryset, many=True)
                 return Response(serializer.data)

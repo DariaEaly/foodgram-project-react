@@ -86,6 +86,12 @@ class RecipeShortSerializer(serializers.ModelSerializer):
         )
 
 
+class DuplicateIngredientException(serializers.ValidationError):
+    def __init__(self):
+        detail = 'Ингредиенты не должны повторяться.'
+        super().__init__(detail, code='invalid')
+
+
 class RecipePostSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(many=True)
     author = UserSerializer(
@@ -109,9 +115,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
     def validate_ingredients(self, value):
         ingredient_ids = {ingredient['id'] for ingredient in value}
         if len(ingredient_ids) != len(value):
-            raise serializers.ValidationError(
-                'Ингредиенты не должны повторяться.'
-            )
+            raise DuplicateIngredientException
         return value
 
     @transaction.atomic
