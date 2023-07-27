@@ -141,15 +141,16 @@ class RecipePostSerializer(serializers.ModelSerializer):
             'cooking_time', instance.cooking_time)
         ingredients = validated_data.pop('ingredients')
         instance.recipeingredient_set.all().delete()
+        ingredients_create = []
         for ingredient in ingredients:
             current_ingredient = get_object_or_404(
-                Ingredient, id=ingredient.get('id')
-            )
-            RecipeIngredient.objects.create(
-                ingredient=current_ingredient,
-                recipe=instance,
-                amount=ingredient['amount']
-            )
+                Ingredient,
+                id=ingredient.get('id'))
+            ingredients_create.append(
+                RecipeIngredient(
+                    ingredient=current_ingredient, recipe=instance,
+                    amount=ingredient['amount']))
+        RecipeIngredient.objects.bulk_create(ingredients_create)
         instance.save()
         return instance
 
