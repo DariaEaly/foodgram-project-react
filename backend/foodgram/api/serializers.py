@@ -48,7 +48,9 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(source='ingredient', queryset=Ingredient.objects.all())
+    id = serializers.PrimaryKeyRelatedField(
+        source='ingredient', queryset=Ingredient.objects.all()
+    )
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit')
@@ -125,7 +127,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             ingredients_create.append(
                 RecipeIngredient(
-                    ingredient=ingredient['id'], recipe=recipe,
+                    ingredient=ingredient['ingredient'], recipe=recipe,
                     amount=ingredient['amount']))
         RecipeIngredient.objects.bulk_create(ingredients_create)
         return recipe
