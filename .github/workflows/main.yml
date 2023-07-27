@@ -69,6 +69,7 @@ jobs:
             echo DB_PORT=${{ secrets.DB_PORT }} >> .env
             echo ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }} >> .env
             sudo docker-compose stop
+            sudo docker image rm dariaealy/foodgram:latest --force
             sudo docker-compose up -d --build
             sudo docker-compose exec backend python manage.py makemigrations
             sudo docker-compose exec backend python manage.py migrate
