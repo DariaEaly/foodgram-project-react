@@ -2,6 +2,7 @@ import base64
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
@@ -47,7 +48,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='ingredient.id')
+    id = serializers.PrimaryKeyRelatedField(source='ingredient', queryset=Ingredient.objects.all())
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit')
@@ -107,8 +108,8 @@ class RecipePostSerializer(serializers.ModelSerializer):
             instance, context={'request': self.context.get('request')}).data
 
     def validate_ingredients(self, value):
-        ingredient_ids = {ingredient['id'] for ingredient in value}
-        if len(ingredient_ids) != len(value):
+        ingredients_list = {item['ingredient'] for item in value}
+        if len(ingredients_list) != len(value):
             raise serializers.ValidationError(
                 [{"ingredients": ["Ингредиенты не должны повторяться."]}]
             )
@@ -139,13 +140,19 @@ class RecipePostSerializer(serializers.ModelSerializer):
         instance.cooking_time = validated_data.get(
             'cooking_time', instance.cooking_time)
         ingredients = validated_data.pop('ingredients')
-        instance.recipeingredient_set.all().delete()
+        RecipeIngredient.objects.filter(recipe=instance).delete()
         ingredients_create = []
         for ingredient in ingredients:
+            current_ingredient = get_object_or_404(
+                Ingredient,
+                id=ingredient['ingredient'].id
+            )
             ingredients_create.append(
                 RecipeIngredient(
-                    ingredient=ingredient['id'], recipe=instance,
-                    amount=ingredient['amount']))
+                    ingredient=current_ingredient, recipe=instance,
+                    amount=ingredient['amount']
+                )
+            )
         RecipeIngredient.objects.bulk_create(ingredients_create)
         instance.save()
         return instance
