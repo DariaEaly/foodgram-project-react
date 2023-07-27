@@ -47,7 +47,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit')
@@ -84,7 +84,6 @@ class RecipeShortSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'image', 'cooking_time'
         )
-from django.shortcuts import get_object_or_404
 
 
 class RecipePostSerializer(serializers.ModelSerializer):
@@ -140,13 +139,14 @@ class RecipePostSerializer(serializers.ModelSerializer):
         instance.cooking_time = validated_data.get(
             'cooking_time', instance.cooking_time)
         ingredients = validated_data.pop('ingredients')
-        RecipeIngredient.objects.filter(recipe=instance).delete()
+        instance.recipeingredient_set.all().delete()
+        ingredients_create = []
         for ingredient in ingredients:
-            ingredient_model = ingredient['id']
-            amount = ingredient['amount']
-            RecipeIngredient.objects.create(
-                ingredient=ingredient_model, recipe=instance, amount=amount
-            )
+            ingredients_create.append(
+                RecipeIngredient(
+                    ingredient=ingredient['id'], recipe=instance,
+                    amount=ingredient['amount']))
+        RecipeIngredient.objects.bulk_create(ingredients_create)
         instance.save()
         return instance
 
