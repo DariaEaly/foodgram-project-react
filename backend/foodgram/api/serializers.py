@@ -2,6 +2,7 @@ import base64
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
@@ -141,11 +142,12 @@ class RecipePostSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         instance.recipeingredient_set.all().delete()
         for ingredient in ingredients:
-            ingredient = Ingredient.objects.get(pk=ingredient['id'])
+            current_ingredient = get_object_or_404(Ingredient,
+                                                   id=ingredient.get('id'))
             RecipeIngredient.objects.create(
-                ingredient=ingredient,
+                ingredient=current_ingredient,
                 recipe=instance,
-                amount=ingredient['amount']
+                amount=ingredient.get('amount')
             )
         instance.save()
         return instance
