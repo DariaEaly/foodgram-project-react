@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from users.models import Follow, User
 
-from .filters import RecipeFilter, IngredientFilter, TagsFilter
+from .filters import RecipeFilter, IngredientFilter
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           RecipeGetSerializer, IngredientSerializer,
@@ -36,22 +36,28 @@ class UserViewSet(UserViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
-            return (User
-                    .objects
-                    .annotate(
-                        is_subscribed=Exists(
-                            Follow.objects
-                            .filter(user=user, author=OuterRef('pk'))
-                        )
-                    ))
+            return (
+                User
+                .objects
+                .annotate(
+                    is_subscribed=Exists(
+                        Follow
+                        .objects
+                        .filter(user=user, author=OuterRef('pk')
+                                )
+                    )
+                )
+            )
         return User.objects.all()
 
     @action(['get'], detail=False)
     def subscriptions(self, request):
-        follow = (Follow
-                  .objects
-                  .filter(user=request.user)
-                  .prefetch_related('author'))
+        follow = (
+            Follow
+            .objects
+            .filter(user=request.user)
+            .prefetch_related('author')
+        )
         authors = [follow_obj.author for follow_obj in follow]
         paginator = PageNumberPagination()
         paginator.page_size = 6
@@ -91,7 +97,7 @@ class UserViewSet(UserViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
-    filter_backends = (DjangoFilterBackend, TagsFilter)
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
@@ -101,21 +107,31 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = (Recipe
-                    .objects
-                    .select_related('author')
-                    .prefetch_related('ingredients')
-                    )
+        queryset = (
+            Recipe
+            .objects
+            .select_related('author')
+            .prefetch_related('ingredients')
+            .prefetch_related('tags')
+        )
         if user.is_authenticated:
-            return (queryset
-                    .annotate(
-                        is_favorited=Exists(
-                            Favorite.objects
-                            .filter(user=user, recipe=OuterRef('pk'))),
-                        is_in_shopping_cart=Exists(
-                            ShoppingCart.objects
-                            .filter(user=user, recipe=OuterRef('pk'))))
+            return (
+                queryset
+                .annotate(
+                    is_favorited=Exists(
+                        Favorite
+                        .objects
+                        .filter(user=user, recipe=OuterRef('pk')
+                                )
+                    ),
+                    is_in_shopping_cart=Exists(
+                        ShoppingCart
+                        .objects
+                        .filter(user=user, recipe=OuterRef('pk')
+                                )
                     )
+                )
+                )
         return queryset
 
     def perform_create(self, serializer):
@@ -134,9 +150,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """
         if request.method == 'GET':
             if pk is None:
-                queryset = (queryset
-                            .filter(
-                                **{f'{related_field}__user': request.user}))
+                queryset = (
+                    queryset
+                    .filter(
+                        **{f'{related_field}__user': request.user}
+                        )
+                )
                 serializer = RecipeGetSerializer(queryset, many=True)
                 return Response(serializer.data)
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

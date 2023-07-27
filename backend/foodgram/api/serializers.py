@@ -23,8 +23,10 @@ class UserSerializer(UserSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username',
-                  'first_name', 'last_name', 'is_subscribed')
+        fields = (
+            'email', 'id', 'username',
+            'first_name', 'last_name', 'is_subscribed'
+        )
 
 
 class Base64ImageField(serializers.ImageField):
@@ -70,7 +72,8 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'tags', 'author', 'ingredients',
             'name', 'image', 'text', 'cooking_time',
-            'is_favorited', 'is_in_shopping_cart')
+            'is_favorited', 'is_in_shopping_cart'
+        )
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
@@ -79,7 +82,8 @@ class RecipeShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
-            'id', 'name', 'image', 'cooking_time')
+            'id', 'name', 'image', 'cooking_time'
+        )
 
 
 class RecipePostSerializer(serializers.ModelSerializer):
@@ -95,18 +99,20 @@ class RecipePostSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = (
             'tags', 'author', 'ingredients',
-            'name', 'image', 'text', 'cooking_time')
-
-        validators = [
-            UniqueTogetherValidator(
-                queryset=RecipeIngredient.objects.all(),
-                fields=('recipe', 'ingredient')
-            )
-        ]
+            'name', 'image', 'text', 'cooking_time'
+        )
 
     def to_representation(self, instance):
         return RecipeGetSerializer(
             instance, context={'request': self.context.get('request')}).data
+
+    def validate_ingredients(self, value):
+        ingredient_ids = {ingredient['id'] for ingredient in value}
+        if len(ingredient_ids) != len(value):
+            raise serializers.ValidationError(
+                'Ингредиенты не должны повторяться.'
+            )
+        return value
 
     @transaction.atomic
     def create(self, validated_data):
@@ -153,10 +159,10 @@ class FollowGetSerializer(UserSerializer):
 
     class Meta:
         model = User
-        fields = [
+        fields = (
             'email', 'id', 'username', 'first_name', 'last_name',
             'is_subscribed', 'recipes', 'recipes_count',
-        ]
+        )
 
     def get_recipes_count(self, obj):
         return obj.recipes.all().count()
