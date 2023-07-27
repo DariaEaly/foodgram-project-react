@@ -111,9 +111,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
         if len(ingredient_ids) != len(value):
             raise serializers.ValidationError(
                 {
-                    "ingredients": [
-                        {"ingredients": ["Ингредиенты не должны повторяться."]}
-                    ]
+                    {"ingredients": ["Ингредиенты не должны повторяться."]}
                 }
             )
         return value
